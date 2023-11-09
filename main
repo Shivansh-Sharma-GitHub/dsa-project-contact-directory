@@ -1,0 +1,223 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+#define MAX_NAME_LENGTH 50
+#define MAX_PHONE_LENGTH 15
+
+struct Contact {
+    char name[MAX_NAME_LENGTH];
+    char phone[MAX_PHONE_LENGTH];
+    struct Contact* prev;
+    struct Contact* next;
+};
+
+struct Contact* phoneDirectory = NULL;
+
+bool isValidPhoneNumber(char phone[]) {
+    if (strlen(phone) == 10) {
+        for (int i = 0; i < 10; i++) {
+            if (phone[i] < '0' || phone[i] > '9') {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+void addContact(char name[], char phone[]) {
+    if (!isValidPhoneNumber(phone)) {
+        printf("Error: Phone number must be exactly 10 digits.\n");
+        return;
+    }
+
+    struct Contact* newContact = (struct Contact*)malloc(sizeof(struct Contact));
+    if (newContact == NULL) {
+        printf("Error: Unable to add contact due to memory constraints.\n");
+        return;
+    }
+
+    strncpy(newContact->name, name, MAX_NAME_LENGTH - 1);
+    newContact->name[MAX_NAME_LENGTH - 1] = '\0';  // Ensure null-terminated string
+    strncpy(newContact->phone, phone, MAX_PHONE_LENGTH - 1);
+    newContact->phone[MAX_PHONE_LENGTH - 1] = '\0';  // Ensure null-terminated string
+    newContact->prev = NULL;
+    newContact->next = phoneDirectory;
+
+    if (phoneDirectory != NULL) {
+        phoneDirectory->prev = newContact;
+    }
+
+    phoneDirectory = newContact;
+    printf("Contact added successfully.\n");
+}
+
+
+void searchContact(char name[]) {
+    printf("Search Results:\n");
+    bool found = false;
+    struct Contact* current = phoneDirectory;
+
+    while (current != NULL) {
+        if (strstr(current->name, name) != NULL) {
+            printf("Name: %s, Phone: %s\n", current->name, current->phone);
+            found = true;
+        }
+        current = current->next;
+    }
+
+    if (!found) {
+        printf("Name not found in the directory.\n");
+    }
+}
+
+void editContact(char name[], char newPhone[]) {
+    struct Contact* current = phoneDirectory;
+    bool found = false;
+
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0) {
+            if (!isValidPhoneNumber(newPhone)) {
+                printf("Error: New phone number must be exactly 10 digits.\n");
+                return;
+            }
+
+            strncpy(current->phone, newPhone, MAX_PHONE_LENGTH - 1);
+            current->phone[MAX_PHONE_LENGTH - 1] = '\0';  // Ensure null-terminated string
+            found = true;
+            printf("Contact edited successfully.\n");
+            return;  // Exit the function once contact is found and edited
+        }
+        current = current->next;
+    }
+
+    if (!found) {
+        printf("Contact not found.\n");
+    }
+}
+
+
+
+void deleteContact(char name[]) {
+    struct Contact* current = phoneDirectory;
+    bool found = false;
+
+    while (current != NULL) {
+        if (strcmp(current->name, name) == 0) {
+            if (current->prev != NULL) {
+                current->prev->next = current->next;
+            } else {
+                phoneDirectory = current->next;
+            }
+
+            if (current->next != NULL) {
+                current->next->prev = current->prev;
+            }
+
+            free(current);
+            found = true;
+            printf("Contact deleted successfully.\n");
+            break;
+        }
+        current = current->next;
+    }
+
+    if (!found) {
+        printf("Contact not found.\n");
+    }
+}
+void sortContacts() {
+    struct Contact* current;
+    struct Contact* index;
+    char tempName[MAX_NAME_LENGTH];
+    char tempPhone[MAX_PHONE_LENGTH];
+
+    if (phoneDirectory == NULL) {
+        return;
+    }
+
+    current = phoneDirectory;
+
+    while (current != NULL) {
+        index = current->next;
+
+        while (index != NULL) {
+            if (strcmp(current->name, index->name) > 0) {
+                strncpy(tempName, current->name, MAX_NAME_LENGTH);
+                strncpy(tempPhone, current->phone, MAX_PHONE_LENGTH);
+                strncpy(current->name, index->name, MAX_NAME_LENGTH);
+                strncpy(current->phone, index->phone, MAX_PHONE_LENGTH);
+                strncpy(index->name, tempName, MAX_NAME_LENGTH);
+                strncpy(index->phone, tempPhone, MAX_PHONE_LENGTH);
+            }
+            index = index->next;
+        }
+        current = current->next;
+    }
+}
+void listContacts() {
+    printf("Listing Contacts (Alphabetically Sorted by Name):\n");
+    sortContacts();
+    struct Contact* current = phoneDirectory;
+
+    while (current != NULL) {
+        printf("Name: %s, Phone: %s\n", current->name, current->phone);
+        current = current->next;
+    }
+}
+
+int main() {
+    char name[MAX_NAME_LENGTH];
+    char phone[MAX_PHONE_LENGTH];
+    int choice;
+
+    printf("Phone Directory Management System\n");
+
+    while (1) {
+        printf("1. Add Contact\n2. Search Contact\n3. Edit Contact\n4. Delete Contact\n5. List Contacts\n6. Quit\nEnter your choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1:
+                printf("Enter name: ");
+                scanf("%s", name);
+                printf("Enter phone number (exactly 10 digits): ");
+                scanf("%s", phone);
+                addContact(name, phone);
+                break;
+
+            case 2:
+                printf("Enter name to search: ");
+                scanf("%s", name);
+                searchContact(name);
+                break;
+
+            case 3:
+                printf("Enter name to edit: ");
+                scanf("%s", name);
+                printf("Enter new phone number (exactly 10 digits): ");
+                scanf("%s", phone);
+                editContact(name, phone);
+                break;
+
+            case 4:
+                printf("Enter name to delete: ");
+                scanf("%s", name);
+                deleteContact(name);
+                break;
+
+            case 5:
+                listContacts();
+                break;
+
+            case 6:
+                printf("Goodbye!\n");
+                return 0;
+
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+}
